@@ -127,21 +127,56 @@ class _ChatScreenState extends State<ChatScreen> {
     final username = (await telegram.getMe()).username;
     _teledart = TeleDart(token, Event(username!));
     _teledart.start();
-    _teledart.onMessage(keyword: 'Hola').listen((message) {
-      _sendMessage('¡Hola! ¿En qué puedo ayudarte?');
-    });
 
-    _teledart.onMessage(keyword: 'Adios').listen((message) {
-      _sendMessage('¡Hasta luego! Que tengas un buen día.');
-    });
+    bool isFirstMessage = true;
 
-    _teledart.onMessage(keyword: 'Ayuda').listen((message) {
-      _sendMessage('¡Claro! ¿En qué necesitas ayuda?');
+    _teledart.onMessage().listen((message) {
+      final text = message.text!.toLowerCase();
+      bool requestingSymptoms = true;
+      List<String> symptoms = [];
+
+      if (isFirstMessage) {
+        _sendMessage('Hola soy TinaluBot, puedo ayudarte a detectar tu enfermedad, escribe tus 3 sintomas principales');
+        isFirstMessage = false;
+        return;
+      }
+
+      if (requestingSymptoms) {
+        if (symptoms.length < 3) {
+          symptoms.add(text);
+          _sendMessage('Por favor, proporciona al menos ${3 - symptoms.length} síntomas más.');
+        } else {
+          requestingSymptoms = false;
+          _sendMessage('Has proporcionado suficientes síntomas. Ahora voy a determinar tu enfermedad.');
+          _determineDisease(symptoms);
+        }
+      }
+      _listenToMessages();
     });
-    _teledart.onMessage(keyword: 'Gracias').listen((message) {
-      _sendMessage('Es un placer ayudarte. :)');
-    });
-    _listenToMessages();
+  }
+
+  void _determineDisease(List<String> symptoms) {
+
+    final Map<String, List<String>> diseases = {
+      'Gripe': ['dolor de cabeza', 'fiebre', 'dolor muscular'],
+      'Resfriado común': ['congestión nasal', 'estornudos', 'garganta irritada'],
+      'Alergias': ['picazón en los ojos', 'estornudos frecuentes', 'nariz que moquea'],
+    };
+
+    String? matchedDisease;
+    for (final entry in diseases.entries) {
+      final diseaseSymptoms = entry.value;
+      if (symptoms.every((symptom) => diseaseSymptoms.contains(symptom))) {
+        matchedDisease = entry.key;
+        break;
+      }
+    }
+
+    if (matchedDisease != null) {
+      _sendMessage('Basado en los síntomas proporcionados, parece que podrías tener $matchedDisease.');
+    } else {
+      _sendMessage('Lo siento, no pude determinar la enfermedad en base a los síntomas proporcionados.');
+    }
   }
 
   void _listenToMessages() {
