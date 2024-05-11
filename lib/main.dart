@@ -20,6 +20,7 @@ class _ChatScreenState extends State<ChatScreen> {
   late TeleDart _teledart;
   List<ChatMessage> _messages = [];
   final TextEditingController _controller = TextEditingController();
+  List<String> symptoms = [];
 
   @override
   void initState() {
@@ -133,7 +134,6 @@ class _ChatScreenState extends State<ChatScreen> {
     _teledart.onMessage().listen((message) {
       final text = message.text!.toLowerCase();
       bool requestingSymptoms = true;
-      List<String> symptoms = [];
 
       if (isFirstMessage) {
         _sendMessage('Hola soy TinaluBot, puedo ayudarte a detectar tu enfermedad, escribe tus 3 sintomas principales');
@@ -142,12 +142,19 @@ class _ChatScreenState extends State<ChatScreen> {
       }
 
       if (requestingSymptoms) {
-        if (symptoms.length < 3) {
-          symptoms.add(text);
+        if (symptoms.length < 2) {
+          String newSymptom = text.trim();
+          if (newSymptom.isNotEmpty) {
+            setState(() {
+              symptoms.add(newSymptom);
+              newSymptom = '';
+            });
+          }
           _sendMessage('Por favor, proporciona al menos ${3 - symptoms.length} síntomas más.');
+          print(symptoms.length);
         } else {
-          requestingSymptoms = false;
           _sendMessage('Has proporcionado suficientes síntomas. Ahora voy a determinar tu enfermedad.');
+          requestingSymptoms = false;
           _determineDisease(symptoms);
         }
       }
